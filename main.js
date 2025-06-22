@@ -1,8 +1,7 @@
 const SCREEN_SIZE_W = 256;
 const SCREEN_SIZE_H = 224;
 const GAME_FPS = 1000 / 60;
-const RIGHT = 1;
-const LEFT = 0;
+
 //仮想キャンバス宣言
 let vcan = document.createElement("canvas");
 let vcon = vcan.getContext("2d");
@@ -10,7 +9,6 @@ let vcon = vcan.getContext("2d");
 //実態キャンバス宣言
 let can = document.getElementById("can");//描画領域適宜
 let con = can.getContext("2d");//どう描くかを制御
-
 
 //仮想キャンバスサイズ宣言
 vcan.width = SCREEN_SIZE_W;
@@ -35,56 +33,21 @@ chImg.src = "sprite.png";//画像読み込み
 let FrameCount = 0;
 let startTime;
 
-//マリオの変数
-let mario_x = 100<<4;//x座標途中の演算を整数で行い誤差をなくすためのシフト．描画で実座標に戻す
-let mario_y = 100<<4;//y座標
-let mario_vx = 0;//マリオのx軸方向の加速度
-let mario_sprite = 1;
-let is_mario_side = 0;
-let mario_stat;
+//各クラス定義
+let Mario1 = new Mario(100<<4, 100<<4);//マリオに関する演算を整数で行うためシフトして演算．描画の時に少数に戻す.
+
+//キーボード入力情報格納用
 let keyb = {
   Left: false,
-  Right: false
+  Right: false,
+  Jump: false
 };
 
 //更新処理
-function update() {
-    let pre_mario_stat = mario_stat;
-    //マリオの動きに合わせて各変数を更新する
-  if (keyb.Left === true && keyb.Right === false) {
-    //通常左歩行
-    mario_stat = 1;
-    is_mario_side = LEFT;
-    //左急ブレーキ処理
-    if(mario_vx > 28 || (pre_mario_stat == 2 && mario_vx >0)) mario_stat = 2;
-    //速度更新左
-    if (mario_vx >= -32) mario_vx -= 1;
-  } else if (keyb.Right === true && keyb.Left === false) {
-    //通常右歩行
-    mario_stat = 1;
-    is_mario_side = RIGHT;
-    //右急ブレーキ処理
-    if (mario_vx < -28 || (pre_mario_stat == 2 && mario_vx < 0)) mario_stat = 2;
-    //速度更新右
-    if (mario_vx <= 32) mario_vx += 1;
-  } else {
-    if (mario_vx > 0) mario_vx -= 1;
-    if (mario_vx < 0) mario_vx += 1;
-    if (!mario_vx) mario_stat = 0;
-  }
-  mario_x += mario_vx;
-
-  //アニメーション変数によりマリオのスプライト変数を更新する
-  if(!mario_stat) mario_sprite = 0;//マリオが静止しているとき
-  else if(mario_stat == 1) {
-    if (is_mario_side == RIGHT) mario_sprite = 2 + (FrameCount >> 3) % 3;
-    if (is_mario_side == LEFT) mario_sprite = 50 + (FrameCount >> 3) % 3;      
-  }
-  else if(mario_stat == 2) { 
-    if (is_mario_side == RIGHT) mario_sprite = 5;
-    if (is_mario_side == LEFT) mario_sprite = 53;
-  }
+function update() {    
+ Mario1.update();
 }
+
 //アニメーション（スプライト番号依存の出力処理）
 function drawSprite(snum, x, y){
     let sx = (snum&15) *16;
@@ -96,8 +59,7 @@ function drawSprite(snum, x, y){
 function draw(){
 vcon.fillStyle="#66AAFF";//プロパティcolor水色
 vcon.fillRect(0,0,SCREEN_SIZE_W,SCREEN_SIZE_H);//メソッド画面表示
-drawSprite(mario_sprite, mario_x, mario_y);
-
+Mario1.draw();
 //デバッグ情報表示
 vcon.font= "24px 'Impact'";
 vcon.fillStyle="#FFFFFF";//プロパティcolor
@@ -134,12 +96,14 @@ function mainLoop(){
 
 // キーボードが押されたとき
 document.addEventListener("keydown", function(e) {
+    if (e.code === "Space") keyb.Jump = true;
     if (e.code === "ArrowLeft"||e.code === "KeyA")  keyb.Left  = true;
     if (e.code === "ArrowRight"||e.code === "KeyD") keyb.Right = true;
 });
 
 // キーボードが離されたとき
 document.addEventListener("keyup", function(e) {
-     if (e.code === "ArrowLeft"||e.code === "KeyA") keyb.Left  = false;
+    if (e.code === "Space") keyb.Jump = false;
+    if (e.code === "ArrowLeft"||e.code === "KeyA") keyb.Left  = false;
     if (e.code === "ArrowRight"||e.code === "KeyD") keyb.Right = false;
-});
+  });
